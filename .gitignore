@@ -1,0 +1,5 @@
+# Ignore massive AI model files
+*.gguf
+
+# Ignore Python cache files
+__pycache__/

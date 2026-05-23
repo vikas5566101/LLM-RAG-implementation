@@ -1,0 +1,218 @@
+[
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "What is the primary concern for scaling up a chemical synthesis process?"
+            },
+            {
+                "role": "assistant",
+                "content": "The primary concern is the potential increase in energy levels, leading to thermal runaway or fire due to the increased amount of reagent."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "How does the scale-up of a reaction affect the behavior of the reaction itself?"
+            },
+            {
+                "role": "assistant",
+                "content": "Reactions can behave differently at large scales due to changes in heat transfer, reagent addition methods, or stirring, which can lead to unexpected outcomes and increased risks."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "What is the primary consideration when scaling up a chemical reaction?"
+            },
+            {
+                "role": "assistant",
+                "content": "The safety actions summarized here are described in more detail in the \u201cPlan\u201d and \u201cDo\u201d sections."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "How does the molar ratio of reagents affect the scale-up process?"
+            },
+            {
+                "role": "assistant",
+                "content": "Any changes in reagents, solvents, molar ratios, temperature, etc. should be tested on a small scale first."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "What is the primary concern when determining the scale of a chemical reaction?"
+            },
+            {
+                "role": "assistant",
+                "content": "The process involves considering the hazards associated with reactants, intermediates, solvents, and products, particularly those classified as pyrophoric reagents, highly acutely toxic chemicals, peroxides, high-energy bonds/configurations, etc."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "How do scientists identify reactions that require extra scrutiny, safety controls, and PI approval?"
+            },
+            {
+                "role": "assistant",
+                "content": "By utilizing specific triggers such as pressures > 1.1 atm in glass apparatus or > 100 psi in custom metal reactors, volumes > 1L, quantities of flammable materials exceeding certain thresholds (e.g., 0.5g), etc."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "What is the thermal energy relationship between a container's surface area and volume during heat dissipation?"
+            },
+            {
+                "role": "assistant",
+                "content": "Thermal energy increases by r^3 due to the increase in volume, despite the surface area increasing by r^2"
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "How does the formation of side-products affect thermodynamics when temperature control is lost?"
+            },
+            {
+                "role": "assistant",
+                "content": "Loss of temperature control can cause the formation of unstable side-products, altering thermodynamics"
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "What are the primary concerns when scaling up a reaction?"
+            },
+            {
+                "role": "assistant",
+                "content": "The risks of these events during a scale-up reaction are significantly greater than in small-scale work, due to unpredictable timing and potential for unattended operation."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "How should personnel be trained and monitored during a scale-up reaction?"
+            },
+            {
+                "role": "assistant",
+                "content": "Personnel running and monitoring a reaction require careful consideration of training/experience, multiple people monitoring/adjusting one reaction, and anthropomorphic factors such as size, strength, and equipment fit to the researcher."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "What are the primary challenges associated with handling transfers in fume hoods?"
+            },
+            {
+                "role": "assistant",
+                "content": "They are heavier, more awkward, and may require additional clamps due to their bulkiness."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "How can laboratory heat sources be designed to ensure safe operation and minimize thermal runaway?"
+            },
+            {
+                "role": "assistant",
+                "content": "By utilizing lab jacks to elevate vessel heat sources, allowing for quick removal in case of a thermal runaway"
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "What is the primary effect of utilizing gas inlet (or vacuum) adapters in scale-up reactions?"
+            },
+            {
+                "role": "assistant",
+                "content": "They allow for better gas flow and venting, mitigating excessive pressure increases caused by needle use."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "How can the size of equipment and chemical quantities impact the handling of glassware?"
+            },
+            {
+                "role": "assistant",
+                "content": "Larger equipment and chemical quantities can significantly increase the weight, requiring additional clamps, cork rings, and practice to maintain control."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "What is the primary objective of conducting a Risk Assessment for scale-up reactions?"
+            },
+            {
+                "role": "assistant",
+                "content": "The primary objective is to gather information on the hazards of the chemicals and reaction parameters, determine a procedure, select appropriate personal protective equipment (PPE), consider what can go wrong, and discuss the plans with co-workers and your PI/lab supervisor."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "How does the Reaction Analogue strategy aid in planning an unpublished reaction?"
+            },
+            {
+                "role": "assistant",
+                "content": "By making the same functional group change in the presence of similar functional groups, this strategy allows for a more informed approach to planning the reaction, as it leverages existing knowledge from published reactions with analogous structures."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "What is the primary consideration for selecting a Contract Research Organization (CRO) for large-scale product production?"
+            },
+            {
+                "role": "assistant",
+                "content": "The ability to perform scale-up of the whole reaction scheme or initial steps with the largest quantities."
+            }
+        ]
+    },
+    {
+        "conversations": [
+            {
+                "role": "user",
+                "content": "How does the need for Personal Protective Equipment (PPE) change as the scale of an experiment increases?"
+            },
+            {
+                "role": "assistant",
+                "content": "By necessitating 'upgraded' PPE, including face shields with goggles, chemical splash aprons, and thicker gloves, to accommodate increased splashes and spills."
+            }
+        ]
+    }
+]
