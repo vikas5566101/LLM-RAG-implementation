@@ -11,12 +11,14 @@ async function sendMessage() {
     userInput.value = '';
     
     // 2. Show a loading indicator
-    const loadingId = appendMessage('System', 'Engine is calculating... (This may take a minute based on CPU limits)', 'ai-message');
+    // 2. Show a beautiful typing indicator
+    const loadingHtml = `<div class="typing-dots"><span></span><span></span><span></span> Processing Request...</div>`;
+    const loadingId = appendMessage('System', loadingHtml, 'ai-message', true);
     sendBtn.disabled = true;
 
     try {
         // 3. Send the request to your Python Backend
-        const response = await fetch('http://127.0.0.1:8000/api/ask-engineer', {
+        const response = await fetch('http://127.0.0.1:8000/ask', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ question: text })
@@ -28,7 +30,7 @@ async function sendMessage() {
         
         // 4. Remove loading text and add the real answer
         document.getElementById(loadingId).remove();
-        appendMessage('Process Engineer', data.answer, 'ai-message');
+        appendMessage('Process Engineer', marked.parse(data.answer), 'ai-message');
 
     } catch (error) {
         console.error(error);

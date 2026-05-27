@@ -1,44 +1,81 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-import httpx
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import Chroma
+from langchain_ollama import OllamaLLM
+from langchain_core.prompts import PromptTemplate
+from langchain_core.runnables import RunnablePassthrough
+from langchain_core.output_parsers import StrOutputParser
 
-# Initialize the FastAPI engine
-app = FastAPI()
+# 1. Initialize the App
+app = FastAPI(title="Digital Process Engineer API")
 
-# Allow your frontend dashboard to talk to this backend (CORS)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], 
+    allow_origins=["*"],  # Allows any local HTML file to talk to the server
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Define the exact structure we expect from the frontend
-class QuestionRequest(BaseModel):
+# 2. Connect to the Local Knowledge Base (The Brain we just built)
+print("Loading Vector Database...")
+embeddings = HuggingFaceEmbeddings(model_name="all-MiniLM-L6-v2")
+vector_db = Chroma(
+    persist_directory="./chroma_db", 
+    embedding_function=embeddings
+)
+# Create a retriever that pulls the top 3 paragraphs
+retriever = vector_db.as_retriever(search_kwargs={"k": 3})
+
+# 3. Connect to Local Llama 3.2 via Ollama (The Engine)
+print("Connecting to Llama 3.1...")
+llm = OllamaLLM(model="llama3.1")
+
+# 4. Define the AI's Persona and Strict Safety Rules
+# 4. Define the AI's Persona and Strict Safety Rules
+PROMPT_TEMPLATE = """
+You are a Senior Digital Process Engineer with 20 years of experience in petroleum refining and petrochemicals.
+Your job is to provide highly technical, practical, and direct answers to junior engineers using ONLY the provided context.
+
+CRITICAL INSTRUCTIONS:
+1. NO GUESSING: If the answer is not explicitly in the context, you must reply: "I cannot find the answer in the provided engineering manuals."
+2. CITE YOUR SOURCES: Begin your answer by stating the document or section you are pulling the information from (based on the context).
+3. BE PRACTICAL: Focus on real-world operational reasons (e.g., mechanical cleaning, maintenance, fouling limits, pressure drops) rather than just theory.
+4. BE CONCISE: Use bolding and bullet points. Do not write fluffy introductions or repetitive conclusions.
+
+Context from Engineering Manuals:
+{context}
+
+User Question: {question}
+
+Senior Process Engineer's Answer:
+"""
+prompt = PromptTemplate.from_template(PROMPT_TEMPLATE)
+
+# Helper function to format retrieved documents into clean text
+def format_docs(docs):
+    return "\n\n".join(doc.page_content for doc in docs)
+
+# 5. Build the Modern RAG Pipeline (LCEL Syntax)
+qa_chain = (
+    {"context": retriever | format_docs, "question": RunnablePassthrough()}
+    | prompt
+    | llm
+    | StrOutputParser()
+)
+
+# 6. Define the API Input Format
+class Query(BaseModel):
     question: str
 
-# The route your dashboard will call
-@app.post("/api/ask-engineer")
-async def ask_engineer(request: QuestionRequest):
-    url = "http://localhost:11434/api/generate"
-    payload = {
-        "model": "process_engineer", # Your custom local AI
-        "prompt": request.question,
-        "stream": False
-    }
+# 7. Create the API Endpoint
+@app.post("/ask")
+async def ask_engineer(query: Query):
+    print(f"Incoming Question: {query.question}")
     
-    # We use a 300-second timeout to give your local CPU plenty of time to type out the answer
-    async with httpx.AsyncClient(timeout=300.0) as client:
-        try:
-            response = await client.post(url, json=payload)
-            response.raise_for_status() # Check for errors
-            
-            data = response.json()
-            return {"answer": data.get("response")}
-            
-        except httpx.ReadTimeout:
-            raise HTTPException(status_code=504, detail="The AI took too long to respond. Try a shorter question.")
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=f"Failed to communicate with Ollama: {str(e)}")
+    # This single line runs the entire modern RAG pipeline!
+    result = qa_chain.invoke(query.question)
+    
+    return {"answer": result}
