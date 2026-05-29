@@ -1,5 +1,9 @@
 import os
-from langchain_community.document_loaders import PyMuPDFLoader
+# Remove this:
+# from langchain_community.document_loaders import PyMuPDFLoader
+
+# to this:
+from langchain_community.document_loaders import PDFPlumberLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
@@ -20,7 +24,7 @@ def build_vector_database():
         print(f"Ingesting: {file_path}...")
         
         # Using PyMuPDFLoader to handle the two-column layouts in Perry's
-        loader = PyMuPDFLoader(file_path)
+        loader = PDFPlumberLoader(file_path)
         documents = loader.load()
         
         # Chop the manuals into overlapping, searchable paragraphs

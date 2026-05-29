@@ -1,31 +1,13 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Process Engineer AI</title>
-    <link rel="stylesheet" href="style.css">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-</head>
-<body>
-    <div class="dashboard-container">
-        <header>
-            <h1>⚙️ Senior Process Engineer</h1>
-            <p>Local AI Engine Status: <span class="status-indicator">Online</span></p>
-        </header>
-
-        <main class="chat-box" id="chat-box">
-            <div class="message ai-message">
-                <strong>System:</strong> Engine initialized. What process scale-up questions can I help you with today?
-            </div>
-        </main>
-
-        <div class="input-area">
-            <textarea id="user-input" placeholder="Ask a detailed engineering question..."></textarea>
-            <button id="send-btn" onclick="sendMessage()">Send Request</button>
-        </div>
-    </div>
-
-    <script src="script.js"></script>
-</body>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>frontend</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
 </html>

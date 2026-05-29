@@ -3,3 +3,17 @@
 
 # Ignore Python cache files
 __pycache__/
+
+# Python / Backend
+.venv/
+__pycache__/
+*.pyc
+.env
+
+# Vector Database (Too large for Git)
+backend/chroma_db/
+
+# Node / Frontend
+frontend/node_modules/
+frontend/dist/
+.DS_Store
