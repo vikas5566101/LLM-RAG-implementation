@@ -76,6 +76,31 @@ function App() {
     }
   };
 
+  const deleteSession = async (sessionId, e) => {
+    e.stopPropagation(); // Prevents the <li> click event from triggering loadSession()
+    
+    if (!window.confirm("Are you sure you want to delete this chat?")) return;
+
+    try {
+      await fetch(`http://127.0.0.1:8000/sessions/${sessionId}`, { method: 'DELETE' });
+      
+      // Remove it from the UI immediately
+      const updatedSessions = sessions.filter(s => s.session_id !== sessionId);
+      setSessions(updatedSessions);
+      
+      // If we just deleted the chat we were currently looking at, switch to a different one
+      if (currentSessionId === sessionId) {
+        if (updatedSessions.length > 0) {
+          loadSession(updatedSessions[0].session_id);
+        } else {
+          startNewSession(); // If it was the last chat, start fresh
+        }
+      }
+    } catch (error) {
+      console.error("Failed to delete session:", error);
+    }
+  };
+
   // --- CHAT & UPLOAD FUNCTIONS ---
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
@@ -209,7 +234,14 @@ function App() {
                   className={currentSessionId === session.session_id ? 'active-session' : ''}
                   onClick={() => loadSession(session.session_id)}
                 >
-                  💬 {session.title}
+                  <span className="session-title" title={session.title}>💬 {session.title}</span>
+                  <button 
+                    className="delete-session-btn" 
+                    onClick={(e) => deleteSession(session.session_id, e)}
+                    title="Delete Chat"
+                  >
+                    🗑️
+                  </button>
                 </li>
               ))}
             </ul>

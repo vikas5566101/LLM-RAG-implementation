@@ -133,6 +133,18 @@ def get_session_messages(session_id: str, db: Session = Depends(get_db)):
     messages = db.query(ChatMessage).filter(ChatMessage.session_id == session_id).order_by(ChatMessage.timestamp.asc()).all()
     return [{"role": m.role, "content": m.content} for m in messages]
 
+@app.delete("/sessions/{session_id}")
+def delete_session(session_id: str, db: Session = Depends(get_db)):
+    """Deletes a chat session and all its associated messages"""
+    session = db.query(ChatSession).filter(ChatSession.id == session_id).first()
+    
+    if not session:
+        return {"status": "error", "message": "Session not found"}
+        
+    db.delete(session)
+    db.commit()
+    
+    return {"status": "success", "message": "Session deleted"}
 
 # --- DYNAMIC PDF UPLOAD ENDPOINT (Unchanged) ---
 @app.post("/upload")

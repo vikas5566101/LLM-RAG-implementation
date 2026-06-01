@@ -312,9 +312,11 @@ button.send-btn:disabled { background: #475569; cursor: not-allowed; }
   font-size: 0.85rem;
   color: #ccc;
   transition: all 0.2s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  
+  /* NEW: Flexbox to push the trash can to the right */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
 }
 
 .session-list li:hover {
@@ -323,12 +325,34 @@ button.send-btn:disabled { background: #475569; cursor: not-allowed; }
 }
 
 .session-list li.active-session {
-  background-color: #3b82f6; /* A nice blue highlight */
+  background-color: #3b82f6; 
   color: white;
   font-weight: bold;
 }
 
-.history-card {
-  max-height: 40vh;
-  overflow-y: auto;
+.session-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-grow: 1;
+  padding-right: 10px;
+}
+
+.delete-session-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  opacity: 0; /* Hidden by default */
+  transition: opacity 0.2s;
+  font-size: 1rem;
+}
+
+/* Only show the trash can when hovering over that specific chat row */
+.session-list li:hover .delete-session-btn {
+  opacity: 0.7;
+}
+
+.delete-session-btn:hover {
+  opacity: 1 !important;
+  transform: scale(1.1);
 }
