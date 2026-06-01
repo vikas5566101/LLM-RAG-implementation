@@ -280,3 +280,55 @@ button.send-btn:disabled { background: #475569; cursor: not-allowed; }
   50% { opacity: 1; }
   100% { opacity: 0.6; }
 }
+/* --- NEW DATABASE UI STYLES --- */
+.new-chat-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: bold;
+  transition: background-color 0.2s;
+}
+
+.new-chat-btn:hover {
+  background-color: #45a049;
+}
+
+.session-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.session-list li {
+  padding: 10px;
+  margin-bottom: 5px;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #ccc;
+  transition: all 0.2s;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.session-list li:hover {
+  background-color: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.session-list li.active-session {
+  background-color: #3b82f6; /* A nice blue highlight */
+  color: white;
+  font-weight: bold;
+}
+
+.history-card {
+  max-height: 40vh;
+  overflow-y: auto;
+}

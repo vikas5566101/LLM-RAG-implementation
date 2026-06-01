@@ -3,30 +3,80 @@ import ReactMarkdown from 'react-markdown';
 import './App.css';
 
 function App() {
-  const [messages, setMessages] = useState([
-    { role: 'ai', content: 'Engine initialized. What process scale-up questions can I help you with today?' }
-  ]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false); // NEW: Upload state
-  
-  // State to hold our agent execution logs
+  // --- STATE ---
+  const [sessions, setSessions] = useState([]);
+  const [currentSessionId, setCurrentSessionId] = useState(null);
+  const [messages, setMessages] = useState([]);
   const [logs, setLogs] = useState([]); 
   
+  const [input, setInput] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  
   const chatEndRef = useRef(null);
-  const fileInputRef = useRef(null); // NEW: Reference for the hidden file input
+  const fileInputRef = useRef(null);
+
+  // --- INITIALIZATION ---
+  // Load sessions when the app starts
+  useEffect(() => {
+    fetchSessions();
+  }, []);
 
   // Auto-scroll to bottom
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  const clearChat = () => {
-    setMessages([{ role: 'ai', content: 'Memory cleared. New session started.' }]);
-    setLogs([]);
+  // --- DATABASE FUNCTIONS ---
+  const fetchSessions = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/sessions');
+      const data = await response.json();
+      setSessions(data);
+      
+      // If we have sessions, load the most recent one. Otherwise, create a new one.
+      if (data.length > 0) {
+        loadSession(data[0].session_id);
+      } else {
+        startNewSession();
+      }
+    } catch (error) {
+      console.error("Failed to fetch sessions:", error);
+    }
   };
 
-  // NEW: Handle PDF Uploads
+  const startNewSession = async () => {
+    try {
+      const response = await fetch('http://127.0.0.1:8000/sessions', { method: 'POST' });
+      const data = await response.json();
+      setCurrentSessionId(data.session_id);
+      setMessages([{ role: 'ai', content: 'New persistent session started. How can I assist you today?' }]);
+      setLogs([]); // Clear logs for new chat
+      fetchSessions(); // Refresh the sidebar
+    } catch (error) {
+      console.error("Failed to create session:", error);
+    }
+  };
+
+  const loadSession = async (sessionId) => {
+    setCurrentSessionId(sessionId);
+    setLogs([{ type: 'system', text: `> Loaded session: ${sessionId}` }]);
+    
+    try {
+      const response = await fetch(`http://127.0.0.1:8000/sessions/${sessionId}/messages`);
+      const data = await response.json();
+      
+      if (data.length === 0) {
+        setMessages([{ role: 'ai', content: 'Empty session loaded. How can I assist you?' }]);
+      } else {
+        setMessages(data);
+      }
+    } catch (error) {
+      console.error("Failed to load messages:", error);
+    }
+  };
+
+  // --- CHAT & UPLOAD FUNCTIONS ---
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -44,7 +94,7 @@ function App() {
     try {
       const response = await fetch('http://127.0.0.1:8000/upload', {
         method: 'POST',
-        body: formData, // Notice we don't set Content-Type header; fetch does it automatically for FormData
+        body: formData, 
       });
 
       const data = await response.json();
@@ -64,13 +114,13 @@ function App() {
       alert("Failed to upload the manual. Check the logs.");
     } finally {
       setIsUploading(false);
-      e.target.value = null; // Reset the input so you can upload the same file again if needed
+      e.target.value = null; 
     }
   };
 
   const sendMessage = async (e) => {
     e.preventDefault();
-    if (!input.trim()) return;
+    if (!input.trim() || !currentSessionId) return;
 
     const userMessage = { role: 'user', content: input };
     setMessages((prev) => [...prev, userMessage]);
@@ -78,6 +128,7 @@ function App() {
     setIsLoading(true);
     setLogs((prev) => [...prev, { type: 'system', text: 'Initiating AI thought process...' }]);
 
+    // Add empty AI message bubble for streaming
     setMessages((prev) => [...prev, { role: 'ai', content: '' }]);
 
     try {
@@ -86,7 +137,7 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           question: userMessage.content,
-          chat_history: messages.filter(m => m.content !== '') 
+          session_id: currentSessionId // NEW: Only sending the ID now!
         })
       });
 
@@ -100,10 +151,9 @@ function App() {
         
         buffer += decoder.decode(value, { stream: true });
         
-        // Check if the buffer contains our special tool markers
         if (buffer.includes(':::')) {
           const parts = buffer.split(':::');
-          buffer = parts.pop(); // Keep the unfinished part in the buffer
+          buffer = parts.pop(); 
           
           parts.forEach(part => {
             if (part.startsWith('__TOOL_USE__:')) {
@@ -116,7 +166,7 @@ function App() {
             }
           });
         } else {
-          // If it's normal text, stream it to the chat bubble
+          // Stream normal text to the chat bubble
           const currentText = buffer;
           setMessages((prev) => {
             const newMessages = [...prev];
@@ -127,7 +177,7 @@ function App() {
             };
             return newMessages;
           });
-          buffer = ""; // Clear buffer after updating chat
+          buffer = ""; 
         }
       }
     } catch (error) {
@@ -142,25 +192,35 @@ function App() {
   return (
     <div className="workspace-container">
       
-      {/* LEFT SIDEBAR: System Status */}
+      {/* LEFT SIDEBAR: Chat History & Status */}
       <aside className="sidebar left-sidebar">
         <div className="sidebar-header">
           <h2>i-HEMS Workspace</h2>
+          <button className="new-chat-btn" onClick={startNewSession}>+ New Chat</button>
         </div>
+        
         <div className="sidebar-content">
+          <div className="status-card history-card">
+            <h3>Recent Sessions</h3>
+            <ul className="session-list">
+              {sessions.map((session) => (
+                <li 
+                  key={session.session_id} 
+                  className={currentSessionId === session.session_id ? 'active-session' : ''}
+                  onClick={() => loadSession(session.session_id)}
+                >
+                  💬 {session.title}
+                </li>
+              ))}
+            </ul>
+          </div>
+
           <div className="status-card">
             <h3>System Vitals</h3>
             <ul>
               <li>🟢 <span>Engine:</span> Llama 3.2 (3B)</li>
               <li>🟢 <span>Vector DB:</span> Chroma Active</li>
-              <li>🟢 <span>Memory:</span> Stateful</li>
-            </ul>
-          </div>
-          <div className="status-card">
-            <h3>Loaded Manuals</h3>
-            <ul className="doc-list">
-              <li>📄 OISD_Standard_118.pdf</li>
-              <li>📄 Perry_Chem_Eng.pdf</li>
+              <li>🟢 <span>Memory:</span> SQLite Connected</li>
             </ul>
           </div>
         </div>
@@ -169,14 +229,12 @@ function App() {
       {/* CENTER COLUMN: The Chat Interface */}
       <main className="main-chat-area">
         <header className="chat-header">
-          <span>⚙️ Senior Process Engineer</span>
-          <button className="clear-btn" onClick={clearChat} title="Clear Memory">🗑️ Clear</button>
+          <span>⚙️ Senior Process Engineer (Session: {currentSessionId?.substring(0,6)}...)</span>
         </header>
         
         <div className="chat-box">
           {messages.map((msg, index) => (
             <div key={index} className={`message-wrapper ${msg.role === 'user' ? 'user-wrapper' : 'ai-wrapper'}`}>
-              {/* Added Avatar Placeholders */}
               {msg.role === 'ai' && <div className="avatar ai-avatar">⚙️</div>}
               
               <div className={`message ${msg.role === 'user' ? 'user-message' : 'ai-message'}`}>
@@ -203,7 +261,6 @@ function App() {
         </div>
 
         <form className="input-area" onSubmit={sendMessage}>
-          {/* NEW: Hidden file input */}
           <input 
             type="file" 
             accept=".pdf" 
@@ -211,8 +268,6 @@ function App() {
             ref={fileInputRef}
             onChange={handleFileUpload}
           />
-          
-          {/* Wire the button to click the hidden input */}
           <button 
             type="button" 
             className="attach-btn" 
@@ -228,9 +283,9 @@ function App() {
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
             placeholder={isUploading ? "Uploading manual..." : "Ask an engineering question..."} 
-            disabled={isLoading || isUploading}
+            disabled={isLoading || isUploading || !currentSessionId}
           />
-          <button type="submit" className="send-btn" disabled={isLoading || isUploading || !input.trim()}>
+          <button type="submit" className="send-btn" disabled={isLoading || isUploading || !input.trim() || !currentSessionId}>
             Send
           </button>
         </form>
@@ -242,19 +297,13 @@ function App() {
           <h2>Agent Execution Logs</h2>
         </div>
         <div className="sidebar-content context-logs">
-          
-          {/* Default message if there are no logs yet */}
           {logs.length === 0 && <p className="log-entry system-log">Waiting for agent execution...</p>}
-          
-          {/* Dynamically render all logs as they stream in */}
           {logs.map((log, index) => (
             <p key={index} className={`log-entry ${log.type}-log`}>
               {log.text}
             </p>
           ))}
-          
           {isLoading && <p className="log-entry active-log">Agent is thinking...</p>}
-          
         </div>
       </aside>
 
