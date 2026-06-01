@@ -1,3 +1,9 @@
+import os
+import shutil
+from fastapi import File, UploadFile
+from langchain_community.document_loaders import PyPDFLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+
 from typing import List, Dict
 import json
 from fastapi import FastAPI
@@ -76,21 +82,12 @@ You have two tools:
 
 CRITICAL RULES:
 - NEVER guess math. You MUST use the python_calculator.
-- The calculator input MUST be raw, executable Python code (e.g., print(2**3)).
-- NEVER guess engineering guidelines, rules, or theory. You MUST use the search_engineering_manuals tool.
-
-EXAMPLE WORKFLOW (Math):
-User: How much heat to raise 200g of liquid from 10C to 50C? (c=2.0)
-Thought: I need to calculate Delta T first, then use q = mc(Delta T).
-Tool Call: python_calculator -> print((200 * 2.0 * 40) / 1000)
-
-EXAMPLE WORKFLOW (Theory/Guidelines):
-User: What is the safety spacing between a fired heater and a storage tank?
-Thought: I have no internal knowledge of this. I MUST use the search tool.
-Tool Call: search_engineering_manuals -> "fired heater storage tank safety spacing guidelines"
+- NEVER guess theory. You MUST use the search tool.
+- The calculator input MUST be raw, executable Python code.
+- NEVER ask the user for permission. NEVER ask follow-up questions.
 """
 
-# 6. Build the Agent Executor (Removed state_modifier to fix your version error)
+# 6. Build the Agent Executor 
 agent_executor = create_react_agent(llm, tools)
 
 # 7. Define the API Input Format
@@ -106,6 +103,43 @@ def format_history(history_list):
         else:
             messages.append(HumanMessage(content=msg["content"]))
     return messages
+
+# --- NEW: DYNAMIC PDF UPLOAD ENDPOINT ---
+@app.post("/upload")
+async def upload_manual(file: UploadFile = File(...)):
+    print(f"\nIncoming File: {file.filename}")
+    
+    # 1. Save the uploaded file temporarily
+    temp_file_path = f"temp_{file.filename}"
+    with open(temp_file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    try:
+        # 2. Read and extract the text from the PDF
+        loader = PyPDFLoader(temp_file_path)
+        documents = loader.load()
+        
+        # 3. Chop the text into AI-sized chunks
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1000, 
+            chunk_overlap=100
+        )
+        chunks = text_splitter.split_documents(documents)
+        
+        # 4. Inject into ChromaDB
+        vector_db.add_documents(chunks)
+        print(f"Successfully injected {len(chunks)} chunks into the database.")
+        
+        return {"filename": file.filename, "status": "success", "message": f"Learned {len(chunks)} new pages of data."}
+        
+    except Exception as e:
+        print(f"Failed to process PDF: {e}")
+        return {"filename": file.filename, "status": "error", "message": str(e)}
+        
+    finally:
+        # 5. Clean up the temporary file so we don't waste hard drive space
+        if os.path.exists(temp_file_path):
+            os.remove(temp_file_path)
 
 # 8. Create the API Endpoint
 @app.post("/ask")
@@ -132,28 +166,48 @@ async def ask_engineer(query: Query):
                             yield f"__TOOL_USE__:{tool_call['name']}|{args_str}:::"
                             
                     # 2. Check for Llama 3.2 "Raw JSON" Tool Calls (The Custom Router)
-                    elif agent_msg.content and '{"name": "search_engineering_manuals"' in agent_msg.content:
+                    elif agent_msg.content and '{"name":' in agent_msg.content:
                         try:
                             # Extract the JSON string from the AI's text
                             json_str = agent_msg.content[agent_msg.content.find("{"):agent_msg.content.rfind("}")+1]
                             tool_data = json.loads(json_str)
+                            tool_name = tool_data.get("name")
                             
-                            # Run the tool manually
-                            search_query = tool_data["parameters"]["query"]
-                            yield f"__TOOL_USE__:search_engineering_manuals|{json.dumps({'query': search_query})}:::"
-                            
-                            # Execute search and send result to UI Sidebar
-                            result = search_engineering_manuals.invoke({"query": search_query})
-                            yield f"__TOOL_RESULT__:{result}:::"
-                            
-                            # --- NEW: FORCE THE AI TO SUMMARIZE THE RESULT ---
-                            follow_up = f"System: The search tool returned this excerpt from the manual:\n\n{result}\n\nPlease summarize this information to answer the user's question directly. Do not use JSON."
-                            messages.append(AIMessage(content=agent_msg.content))
-                            messages.append(HumanMessage(content=follow_up))
-                            
-                            # Stream the final synthesized text to the Main Chat
-                            async for final_chunk in llm.astream(messages):
-                                yield final_chunk.content
+                            # --- ROUTE A: SEARCH TOOL ---
+                            if tool_name == "search_engineering_manuals":
+                                search_query = tool_data["parameters"]["query"]
+                                yield f"__TOOL_USE__:search_engineering_manuals|{json.dumps({'query': search_query})}:::"
+                                
+                                result = search_engineering_manuals.invoke({"query": search_query})
+                                yield f"__TOOL_RESULT__:{result}:::"
+                                
+                                follow_up = f"System: The search tool returned this excerpt:\n\n{result}\n\nSummarize this to answer the user directly. Do not use JSON."
+                                messages.append(AIMessage(content=agent_msg.content))
+                                messages.append(HumanMessage(content=follow_up))
+                                
+                                async for final_chunk in llm.astream(messages):
+                                    yield final_chunk.content
+
+                            # --- ROUTE B: PYTHON CALCULATOR ---
+                            elif tool_name == "python_calculator":
+                                # Extract the python code from the JSON
+                                python_code = tool_data["parameters"].get("query", "")
+                                if not python_code:
+                                    python_code = next(iter(tool_data["parameters"].values()), "")
+                                    
+                                yield f"__TOOL_USE__:python_calculator|{json.dumps({'status': 'Executing Math...'})}:::"
+                                
+                                # Run the tool manually
+                                result = python_calculator.invoke(python_code)
+                                yield f"__TOOL_RESULT__:{result}:::"
+                                
+                                # Feed the math answer back to the LLM to write a final sentence
+                                follow_up = f"System: The python calculator returned this result:\n{result}\n\nState this answer clearly to the user. Do not use JSON."
+                                messages.append(AIMessage(content=agent_msg.content))
+                                messages.append(HumanMessage(content=follow_up))
+                                
+                                async for final_chunk in llm.astream(messages):
+                                    yield final_chunk.content
                                 
                         except Exception as e:
                             print(f"Failed to parse manual tool call: {e}")

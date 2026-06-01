@@ -8,11 +8,13 @@ function App() {
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploading, setIsUploading] = useState(false); // NEW: Upload state
   
   // State to hold our agent execution logs
   const [logs, setLogs] = useState([]); 
   
   const chatEndRef = useRef(null);
+  const fileInputRef = useRef(null); // NEW: Reference for the hidden file input
 
   // Auto-scroll to bottom
   useEffect(() => {
@@ -22,6 +24,48 @@ function App() {
   const clearChat = () => {
     setMessages([{ role: 'ai', content: 'Memory cleared. New session started.' }]);
     setLogs([]);
+  };
+
+  // NEW: Handle PDF Uploads
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.type !== 'application/pdf') {
+      alert("Please upload a valid PDF file.");
+      return;
+    }
+
+    setIsUploading(true);
+    setLogs((prev) => [...prev, { type: 'system', text: `> Uploading ${file.name}...` }]);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch('http://127.0.0.1:8000/upload', {
+        method: 'POST',
+        body: formData, // Notice we don't set Content-Type header; fetch does it automatically for FormData
+      });
+
+      const data = await response.json();
+      
+      if (data.status === "success") {
+        setLogs((prev) => [...prev, { type: 'result', text: `> Success: ${data.message}` }]);
+        setMessages((prev) => [...prev, { 
+          role: 'ai', 
+          content: `✅ **Database Updated:** I have successfully read and memorized **${file.name}**. (${data.message})` 
+        }]);
+      } else {
+        throw new Error(data.message);
+      }
+    } catch (error) {
+      console.error("Upload Error:", error);
+      setLogs((prev) => [...prev, { type: 'error', text: `> Upload Error: ${error.message}` }]);
+      alert("Failed to upload the manual. Check the logs.");
+    } finally {
+      setIsUploading(false);
+      e.target.value = null; // Reset the input so you can upload the same file again if needed
+    }
   };
 
   const sendMessage = async (e) => {
@@ -159,15 +203,36 @@ function App() {
         </div>
 
         <form className="input-area" onSubmit={sendMessage}>
-          <button type="button" className="attach-btn" title="Upload Document">📎</button>
+          {/* NEW: Hidden file input */}
+          <input 
+            type="file" 
+            accept=".pdf" 
+            style={{ display: 'none' }} 
+            ref={fileInputRef}
+            onChange={handleFileUpload}
+          />
+          
+          {/* Wire the button to click the hidden input */}
+          <button 
+            type="button" 
+            className="attach-btn" 
+            title="Upload Document"
+            onClick={() => fileInputRef.current.click()}
+            disabled={isLoading || isUploading}
+          >
+            {isUploading ? '⏳' : '📎'}
+          </button>
+          
           <input 
             type="text" 
             value={input} 
             onChange={(e) => setInput(e.target.value)} 
-            placeholder="Ask an engineering question..." 
-            disabled={isLoading}
+            placeholder={isUploading ? "Uploading manual..." : "Ask an engineering question..."} 
+            disabled={isLoading || isUploading}
           />
-          <button type="submit" className="send-btn" disabled={isLoading || !input.trim()}>Send</button>
+          <button type="submit" className="send-btn" disabled={isLoading || isUploading || !input.trim()}>
+            Send
+          </button>
         </form>
       </main>
 
