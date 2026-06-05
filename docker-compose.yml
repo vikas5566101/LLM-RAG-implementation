@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      # These volumes ensure your database and AI memory aren't deleted when Docker stops
+      - ./backend/chroma_db:/app/chroma_db
+      - ./backend/chat_history.db:/app/chat_history.db
+      - ./backend/data:/app/data
+    extra_hosts:
+      # This allows the container to talk to Ollama on your physical computer
+      - "host.docker.internal:host-gateway"
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend

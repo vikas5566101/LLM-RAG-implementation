@@ -48,7 +48,11 @@ retriever = vector_db.as_retriever(search_kwargs={"k": 5})
 
 # 3. Connect to Llama 3.2
 print("Connecting to Llama 3.2 Agent Engine...")
-llm = ChatOllama(model="llama3.2", temperature=0)
+llm = ChatOllama(
+    base_url="http://host.docker.internal:11434", 
+    model="llama3.2", 
+    temperature=0
+)
 
 # 4. Give the AI its Tools
 
