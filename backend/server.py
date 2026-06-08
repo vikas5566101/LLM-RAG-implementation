@@ -90,18 +90,18 @@ llm = ChatOllama(
 
 @tool
 def search_engineering_manuals(query: str, config: RunnableConfig) -> str:
-    """MANDATORY TOOL for any questions about guidelines, safety, OISD, API, or theory. 
-    You have NO internal knowledge of these topics. You MUST use this tool to search for the answer before speaking.
-    Input must be a single search string."""
+    """MANDATORY TOOL for questions about guidelines, safety, codes, or theory. 
+    You MUST use this tool to search the database. 
+    The argument MUST be passed using the 'query' parameter key.
+    CRITICAL: The 'query' MUST be 2 to 4 highly dense keywords, NOT full sentences. 
+    (Example: Use 'flutter chatter difference' instead of 'What is the difference between flutter and chatter?')"""
     
-    # 1. Silently grab the user_id that we pass from the /ask endpoint
     active_user = config.get("configurable", {}).get("user_id")
     print(f"Searching DB for: '{query}' (Secured to User: {active_user})")
     
-    # 2. The Magic Filter: ONLY grab chunks uploaded by this exact user
     docs = vector_db.similarity_search(
         query, 
-        k=5, 
+        k=3, # <-- Let's bump this to 5 so it has a slightly wider net to catch the answer
         filter={"user_id": active_user}
     )
     
@@ -109,28 +109,84 @@ def search_engineering_manuals(query: str, config: RunnableConfig) -> str:
         return "No relevant information found in the manuals."
     
     return "\n\n".join([f"--- Excerpt ---\n{doc.page_content}" for doc in docs])
+
 # Initialize the Python Calculator tool
 python_calculator = PythonREPLTool(
     name="python_calculator",
-    description="Execute Python code for exact math. INPUT MUST BE VALID PYTHON CODE ONLY. NO ENGLISH WORDS. You must use print() to output the final result so you can read it."
+    description="Execute Python code for exact math. The argument MUST be passed using the 'query' parameter key. INPUT MUST BE VALID PYTHON CODE ONLY."
 )
 
+@tool
+def engineering_unit_converter(query: str) -> str:
+    """MANDATORY TOOL for converting process engineering and energy units.
+    The argument MUST be passed using the 'query' parameter key.
+    Format the query EXACTLY as a comma-separated string: "VALUE,FROM_UNIT,TO_UNIT" 
+    Example 1: "450,psi,bar"
+    Example 2: "100,celsius,fahrenheit"
+    Example 3: "50,kw,hp"
+    Supported Pressure: psi, bar, atm, pa, kpa. 
+    Supported Temperature: celsius, fahrenheit, kelvin.
+    Supported Power: kw, mw, hp, w.
+    """
+    try:
+        parts = [p.strip().lower() for p in query.split(',')]
+        if len(parts) != 3:
+            return "Error: Query must be exactly 'VALUE,FROM_UNIT,TO_UNIT'."
+        
+        value = float(parts[0])
+        from_unit = parts[1]
+        to_unit = parts[2]
+        
+        # --- Temperature Conversions ---
+        if from_unit in ['celsius', 'c'] and to_unit in ['fahrenheit', 'f']:
+            return f"{value} Celsius = {(value * 9/5) + 32:.2f} Fahrenheit"
+        elif from_unit in ['fahrenheit', 'f'] and to_unit in ['celsius', 'c']:
+            return f"{value} Fahrenheit = {(value - 32) * 5/9:.2f} Celsius"
+        elif from_unit in ['celsius', 'c'] and to_unit in ['kelvin', 'k']:
+            return f"{value} Celsius = {value + 273.15:.2f} Kelvin"
+            
+        # --- Pressure Conversions (Base: 1 atm) ---
+        pressure_to_atm = {'atm': 1.0, 'psi': 14.6959, 'bar': 1.01325, 'pa': 101325, 'kpa': 101.325}
+        if from_unit in pressure_to_atm and to_unit in pressure_to_atm:
+            atm_val = value / pressure_to_atm[from_unit]
+            result = atm_val * pressure_to_atm[to_unit]
+            return f"{value} {from_unit.upper()} = {result:.4f} {to_unit.upper()}"
+            
+        # --- Power Conversions (Base: 1 Watt) ---
+        power_to_watts = {'w': 1.0, 'kw': 1000.0, 'mw': 1000000.0, 'hp': 745.7}
+        if from_unit in power_to_watts and to_unit in power_to_watts:
+            watt_val = value * power_to_watts[from_unit]
+            result = watt_val / power_to_watts[to_unit]
+            return f"{value} {from_unit.upper()} = {result:.4f} {to_unit.upper()}"
+            
+        return f"Error: Conversion from {from_unit} to {to_unit} is not supported."
+    except ValueError:
+        return "Error: The VALUE must be a valid number."
+    except Exception as e:
+        return f"Error executing conversion: {str(e)}"
+
 # Define the tools array for LangGraph
-tools = [search_engineering_manuals, python_calculator]
+tools = [search_engineering_manuals, python_calculator, engineering_unit_converter]
+
+
 
 # 5. Define System Prompt
 system_prompt = """You are a Senior Digital Process Engineer. 
 You have NO internal memory of engineering standards. You cannot answer theory questions from your own head.
 
 You have two tools:
-1. search_engineering_manuals: MANDATORY for factual text, safety codes, and theory.
-2. python_calculator: MANDATORY for exact math.
+1. search_engineering_manuals: Use this to search PDFs for theory and text.
+2. engineering_unit_converter: Use this to convert Pressure, Temperature, or Power units.
+3. python_calculator: Use this ONLY for doing math equations.
 
 CRITICAL RULES:
 - NEVER guess math. You MUST use the python_calculator.
 - NEVER guess theory. You MUST use the search tool.
+- NEVER guess unit conversions. You MUST use the engineering_unit_converter tool.
 - The calculator input MUST be raw, executable Python code.
 - NEVER ask the user for permission. NEVER ask follow-up questions.
+- TOOL FORMATTING: When calling ANY tool, the argument key MUST be exactly "query". NEVER use the word "input".
+  Example: {"name": "python_calculator", "parameters": {"query": "250 * 4.5"}}
 - FINAL ANSWER FORMATTING: When speaking to the user, you MUST use plain, professional English. NEVER output JSON, dictionaries, or raw tool-call formats.
 """
 
