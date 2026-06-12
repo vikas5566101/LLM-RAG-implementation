@@ -1,27 +1,25 @@
-# ⚙️ Senior Process Engineer AI Dashboard
+# i-HEMS: Digital Process Engineer (Local RAG Architecture)
 
-A full-stack, locally hosted AI web application designed to answer complex chemical engineering scale-up questions. 
+[![Demo Video](https://img.shields.io/badge/YouTube-Watch_Demo-red?style=for-the-badge&logo=youtube)](YOUR_YOUTUBE_LINK_HERE)
 
-This project demonstrates a complete end-to-end Machine Learning and Web Development pipeline: fine-tuning a Large Language Model (LLM) on custom engineering manuals, serving it entirely offline via local hardware, and building an asynchronous web dashboard to interact with the engine.
+An offline, privacy-first Retrieval-Augmented Generation (RAG) assistant integrated into a Hybrid Renewable Energy Management System (i-HEMS). Built to act as a deterministic Digital Process Engineer capable of analyzing dense API standards, executing mathematical conversions, and maintaining strict conversational boundaries.
 
-## 🏗️ Architecture Stack
-* **AI Model:** LLaMA-3.2 (8-Billion Parameters), fine-tuned using Unsloth & exported to GGUF.
-* **Inference Engine:** [Ollama](https://ollama.com/) (Local API & Model Management).
-* **Backend:** Python + FastAPI + Uvicorn (Asynchronous API routing).
-* **Frontend:** Vanilla HTML5, CSS3, and JavaScript (Fetch API).
+## 🏗️ Architecture & Tech Stack
+* **Frontend:** React, Vite, Tailwind CSS (Multi-tenant JWT Authentication)
+* **Backend:** FastAPI, Python, LangGraph
+* **AI & Data:** Llama 3.2 (Local via Ollama), ChromaDB (Vector Siloing), HuggingFace Embeddings
+* **Infrastructure:** Fully Dockerized (Containerized multi-service deployment)
 
----
+*(Replace this line with your exported Excalidraw/draw.io Architecture Diagram once created! e.g., `![Architecture Diagram](./diagram.png)`)*
 
-## 🚀 How to Run This Project Locally
+## 🚀 Key Enterprise Features
+1. **Multi-Tenant Vector Security:** Implemented JWT-based vector siloing. Document chunks are cryptographically bound to specific session IDs, ensuring absolute data privacy between users.
+2. **Deterministic Tool Handoffs:** Utilized LangGraph to integrate custom Python tools (e.g., Process Unit Converter). The LLM bypasses mathematical hallucination by routing numerical calculations to isolated Python functions.
+3. **Automated Quantitative Testing:** Built an automated evaluation pipeline using the **RAGAS** framework. Mathematically verified the pipeline's *Faithfulness* and *Context Precision* against the highly technical API 520 Part II engineering standard.
+4. **Semantic Guardrails:** Engineered strict system prompts and routing logic to actively block off-topic queries, saving local compute latency and protecting the AI's professional persona.
 
-*Note: Due to GitHub's 100MB file limit, the custom 4.6 GB fine-tuned `.gguf` model is not included in this repository. The instructions below will guide you to boot the architecture using a standard LLaMA 3 model to test the full-stack routing.*
-
-### Prerequisites
-1. **[Python 3.9+](https://www.python.org/downloads/)** installed.
-2. **[Ollama](https://ollama.com/)** installed and running in the background.
-
-### Step 1: Clone the Repository
+## ⚙️ Local Deployment
 ```bash
-git clone [https://github.com/vikas5566101/process-engineer-ai-single-dataset.git](https://github.com/vikas5566101/process-engineer-ai-single-dataset.git)
-cd process-engineer-ai-single-dataset
-
+git clone <your-repo-url>
+cd process-engineer
+docker compose up --build -d

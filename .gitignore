@@ -1,19 +1,20 @@
 # Ignore massive AI model files
 *.gguf
 
-# Ignore Python cache files
-__pycache__/
-
 # Python / Backend
 .venv/
 __pycache__/
 *.pyc
 .env
 
-# Vector Database (Too large for Git)
+# Databases (Local test data and large vectors)
 backend/chroma_db/
+chat_history.db
+backend/chat_history.db
 
 # Node / Frontend
 frontend/node_modules/
 frontend/dist/
+
+# OS Generated
 .DS_Store
