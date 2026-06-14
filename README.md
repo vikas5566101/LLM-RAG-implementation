@@ -10,7 +10,7 @@ An offline, privacy-first Retrieval-Augmented Generation (RAG) assistant integra
 * **AI & Data:** Llama 3.2 (Local via Ollama), ChromaDB (Vector Siloing), HuggingFace Embeddings
 * **Infrastructure:** Fully Dockerized (Containerized multi-service deployment)
 
-*(Replace this line with your exported Excalidraw/draw.io Architecture Diagram once created! e.g., `![Architecture Diagram](./diagram.png)`)*
+![Architecture Diagram](./diagram.png)
 
 ## 🚀 Key Enterprise Features
 1. **Multi-Tenant Vector Security:** Implemented JWT-based vector siloing. Document chunks are cryptographically bound to specific session IDs, ensuring absolute data privacy between users.
