@@ -20,6 +20,6 @@ An offline, privacy-first Retrieval-Augmented Generation (RAG) assistant integra
 
 ## ⚙️ Local Deployment
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/vikas5566101/LLM-RAG-implementation.git
 cd process-engineer
 docker compose up --build -d
